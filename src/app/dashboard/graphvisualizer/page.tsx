@@ -33,8 +33,32 @@ export default function GraphVisualizer() {
 
 const handleDownloadPdf = async () => {
   if (!exportRef.current) return;
+
+  // 1. Salva le vecchie variabili
+  const root = document.documentElement;
+  const oldVars: Record<string, string> = {};
+
+  // 2. Cicla TUTTE le variabili e sostituisci le oklch
+  for (const style of Array.from(root.style)) {
+    oldVars[style] = root.style.getPropertyValue(style);
+    // Sostituisci tutte le variabili che contengono "oklch" con #fff o #111
+    if (root.style.getPropertyValue(style).includes("oklch")) {
+      root.style.setProperty(style, "#fff");
+    }
+  }
+  // In ogni caso, setta anche i classici
+  root.style.setProperty('--background', '#fff');
+  root.style.setProperty('--foreground', '#111');
+  root.style.setProperty('--muted', '#e5e7eb');
+  root.style.setProperty('--card', '#fff');
+  root.style.setProperty('--primary', '#111');
+  root.style.setProperty('--primary-foreground', '#fff');
+  root.style.setProperty('--secondary', '#ccc');
+  root.style.setProperty('--secondary-foreground', '#111');
+  
   exportRef.current.classList.add("export-pdf-forced");
-  await new Promise((resolve) => setTimeout(resolve, 10)); // assicura il re-render
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
   try {
     const canvas = await html2canvas(exportRef.current, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
@@ -46,6 +70,10 @@ const handleDownloadPdf = async () => {
     pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
     pdf.save("report.pdf");
   } finally {
+    // Ripristina le vecchie variabili di root
+    for (const style in oldVars) {
+      root.style.setProperty(style, oldVars[style]);
+    }
     exportRef.current.classList.remove("export-pdf-forced");
   }
 };
