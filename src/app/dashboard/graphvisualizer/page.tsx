@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,9 @@ export default function GraphVisualizer() {
   const router = useRouter();
   const { parsedData, fileName, objectData } = useRgpStore();
   const exportRef = useRef<HTMLDivElement>(null);
+
+  const [chartType, setChartType] = useState<'amplitude' | 'feed'>('amplitude');
+
 
   useEffect(() => {
     if (!parsedData?.length) router.push("/dashboard/upload");
@@ -111,58 +114,95 @@ const handleDownloadPdf = async () => {
         </div>
       </div>
 
+      {/* toggle select */}
+
+      <div className="flex gap-4 items-center mb-4">
+        <span className="font-semibold">Visualizza curva:</span>
+        <Button
+          variant={chartType === "amplitude" ? "default" : "outline"}
+          onClick={() => setChartType("amplitude")}
+        >
+          Resistenza (drill)
+        </Button>
+        <Button
+          variant={chartType === "feed" ? "default" : "outline"}
+          onClick={() => setChartType("feed")}
+        >
+          Feed
+        </Button>
+      </div>
+
+
       {/* GRAFICO */}
-      <Card className="w-full max-w-5xl shadow border mt-4">
-        <CardHeader>
-          <CardTitle>Profilo Penetrazione (Curva Drill)</CardTitle>
-          {fileName && (
-            <div className="text-xs text-gray-500 mb-1">
-              <b>File:</b> {fileName}
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="h-[520px] bg-white">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={parsedData}
-              margin={{ top: 10, right: 20, left: 0, bottom: 30 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="depth"
-                type="number"
-                domain={[0, 40]}
-                ticks={[...Array(21).keys()].map(i => i * 2)}
-                label={{
-                  value: "Profondità [cm]",
-                  position: "insideBottomRight",
-                  offset: -10,
-                  fontSize: 12,
-                }}
-              />
-              <YAxis
-                domain={[0, 100]}
-                label={{
-                  value: "Ampiezza [%]",
-                  angle: -90,
-                  position: "insideLeft",
-                  fontSize: 12,
-                }}
-              />
-              <Tooltip />
-              <Area
-                type="monotone"
-                dataKey="amplitude"
-                stroke="#38bdf8"
-                fill="#bae6fd"
-                fillOpacity={0.2}
-                name="Resistenza (drill)"
-                dot={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+<Card className="w-full max-w-7xl shadow border mt-4">
+  <CardHeader>
+    <CardTitle>Profilo Penetrazione (Curva Drill)</CardTitle>
+    {fileName && (
+      <div className="text-xs text-gray-500 mb-1">
+        <b>File:</b> {fileName}
+      </div>
+    )}
+  </CardHeader>
+  <CardContent className="h-[340px] bg-white">
+    <div className="flex gap-4 items-center mb-4">
+      <span className="font-semibold">Visualizza curva:</span>
+      <Button
+        variant={chartType === "amplitude" ? "default" : "outline"}
+        onClick={() => setChartType("amplitude")}
+      >
+        Resistenza (drill)
+      </Button>
+      <Button
+        variant={chartType === "feed" ? "default" : "outline"}
+        onClick={() => setChartType("feed")}
+      >
+        Feed
+      </Button>
+    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart
+        data={parsedData}
+        margin={{ top: 10, right: 20, left: 0, bottom: 30 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis
+          dataKey="depth"
+          type="number"
+          domain={[0, 40]}
+          ticks={[...Array(21).keys()].map(i => i * 2)}
+          label={{
+            value: "Profondità [cm]",
+            position: "insideBottomRight",
+            offset: -10,
+            fontSize: 12,
+          }}
+        />
+        <YAxis
+          domain={[0, 100]}
+          label={{
+            value: chartType === "amplitude"
+              ? "Ampiezza [%]"
+              : "Feed",
+            angle: -90,
+            position: "insideLeft",
+            fontSize: 12,
+          }}
+        />
+        <Tooltip />
+        <Area
+          type="monotone"
+          dataKey={chartType}
+          stroke={chartType === "amplitude" ? "#2563eb" : "#f59e42"}
+          fill={chartType === "amplitude" ? "#60a5fa" : "#fbbf24"}
+          fillOpacity={0.35}
+          name={chartType === "amplitude" ? "Resistenza (drill)" : "Feed"}
+          dot={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  </CardContent>
+</Card>
+
       </div>
     </div>
   );

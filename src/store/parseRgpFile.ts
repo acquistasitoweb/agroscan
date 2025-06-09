@@ -25,6 +25,7 @@ export interface RgpMeta {
 export interface RgpPoint {
   depth: number;        // in cm
   amplitude: number;    // drill value (resistenza/ampiezza)
+  feed?: number;        // valore feed associato (può essere opzionale)
 }
 
 export interface RgpParsed {
@@ -33,11 +34,12 @@ export interface RgpParsed {
   objectData?: ObjectData;
 }
 
+
+
 export function parseRgpFile(fileContent: string) {
   let drillingDepthCm = 0;
   let json: any = {};
 
-  // 👇 ***Aggiungi questa riga per parseare il JSON!***
   try {
     json = JSON.parse(fileContent);
   } catch {
@@ -70,8 +72,15 @@ export function parseRgpFile(fileContent: string) {
 
   // *** Estrai drill dal JSON (meglio) ***
   let drillArray: number[] = [];
+  let feedArray: number[] = []; // <--- AGGIUNGI QUESTA RIGA
+
   if (json?.profile?.drill && Array.isArray(json.profile.drill)) {
     drillArray = json.profile.drill;
+
+    if (json.profile.feed && Array.isArray(json.profile.feed)) {
+      feedArray = json.profile.feed;
+    }
+
   } else {
     // fallback per file non JSON (usa regex come prima)
     const drillMatch = fileContent.match(/"drill"\s*:\s*\[([\s\S]*?)\]/);
@@ -83,12 +92,24 @@ export function parseRgpFile(fileContent: string) {
           .map((v) => parseFloat(v.replace(",", ".")))
           .filter((v) => !isNaN(v))
       : [];
+
+       // feed fallback
+    const feedMatch = fileContent.match(/"feed"\s*:\s*\[([\s\S]*?)\]/);
+    feedArray = feedMatch
+      ? feedMatch[1]
+          .replace(/\s+/g, "")
+          .split(",")
+          .filter((v) => v.length > 0)
+          .map((v) => parseFloat(v.replace(",", ".")))
+          .filter((v) => !isNaN(v))
+      : [];
   }
 
   const n = drillArray.length;
   const data = drillArray.map((amplitude, i) => ({
     depth: n > 1 ? parseFloat(((drillingDepthCm * i) / (n - 1)).toFixed(2)) : 0,
-    amplitude,
+    amplitude,    feed: feedArray[i] ?? null, // feed per ogni punto, null se mancante
+
   }));
 
   // DEBUG: log profondità trovata
