@@ -13,7 +13,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
+  ResponsiveContainer, 
+  Legend,
 } from "recharts";
 import { useRgpStore } from "@/store/useRgpStore";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,6 @@ export default function GraphVisualizer() {
   const { parsedData, fileName, objectData } = useRgpStore();
   const exportRef = useRef<HTMLDivElement>(null);
 
-  const [chartType, setChartType] = useState<'amplitude' | 'feed'>('amplitude');
 
 
   useEffect(() => {
@@ -114,29 +114,13 @@ const handleDownloadPdf = async () => {
         </div>
       </div>
 
-      {/* toggle select */}
-
-      <div className="flex gap-4 items-center mb-4">
-        <span className="font-semibold">Visualizza curva:</span>
-        <Button
-          variant={chartType === "amplitude" ? "default" : "outline"}
-          onClick={() => setChartType("amplitude")}
-        >
-          Resistenza (drill)
-        </Button>
-        <Button
-          variant={chartType === "feed" ? "default" : "outline"}
-          onClick={() => setChartType("feed")}
-        >
-          Feed
-        </Button>
-      </div>
+      
 
 
       {/* GRAFICO */}
 <Card className="w-full max-w-7xl shadow border mt-4">
   <CardHeader>
-    <CardTitle>Profilo Penetrazione (Curva Drill)</CardTitle>
+    <CardTitle>Profilo Penetrazione: Resistenza & Feed</CardTitle>
     {fileName && (
       <div className="text-xs text-gray-500 mb-1">
         <b>File:</b> {fileName}
@@ -144,25 +128,10 @@ const handleDownloadPdf = async () => {
     )}
   </CardHeader>
   <CardContent className="h-[340px] bg-white">
-    <div className="flex gap-4 items-center mb-4">
-      <span className="font-semibold">Visualizza curva:</span>
-      <Button
-        variant={chartType === "amplitude" ? "default" : "outline"}
-        onClick={() => setChartType("amplitude")}
-      >
-        Resistenza (drill)
-      </Button>
-      <Button
-        variant={chartType === "feed" ? "default" : "outline"}
-        onClick={() => setChartType("feed")}
-      >
-        Feed
-      </Button>
-    </div>
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart
         data={parsedData}
-        margin={{ top: 10, right: 20, left: 0, bottom: 30 }}
+        margin={{ top: 10, right: 40, left: 0, bottom: 30 }}
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis
@@ -171,37 +140,54 @@ const handleDownloadPdf = async () => {
           domain={[0, 40]}
           ticks={[...Array(21).keys()].map(i => i * 2)}
           label={{
-            value: "Profondità [cm]",
+            value: "Profondità di penetrazione [cm]",
             position: "insideBottomRight",
             offset: -10,
-            fontSize: 12,
+            fontSize: 14,
+            fontWeight: "bold",
           }}
         />
         <YAxis
           domain={[0, 100]}
           label={{
-            value: chartType === "amplitude"
-              ? "Ampiezza [%]"
-              : "Feed",
+            value: "Resistenza [%] / Feed",
             angle: -90,
             position: "insideLeft",
-            fontSize: 12,
+            fontSize: 14,
+            fontWeight: "bold",
           }}
         />
-        <Tooltip />
+        <Tooltip
+          formatter={(value, name) => {
+            if (name === "Resistenza (drill)") return [`${value} %`, "Resistenza"];
+            if (name === "Feed") return [value, "Feed"];
+            return [value, name];
+          }}
+        />
+        <Legend verticalAlign="top" height={36} />
         <Area
           type="monotone"
-          dataKey={chartType}
-          stroke={chartType === "amplitude" ? "#2563eb" : "#f59e42"}
-          fill={chartType === "amplitude" ? "#60a5fa" : "#fbbf24"}
-          fillOpacity={0.35}
-          name={chartType === "amplitude" ? "Resistenza (drill)" : "Feed"}
+          dataKey="amplitude"
+          name="Resistenza (drill)"
+          stroke="#2563eb"
+          fill="#60a5fa"
+          fillOpacity={0.22}
+          dot={false}
+        />
+        <Area
+          type="monotone"
+          dataKey="feed"
+          name="Feed"
+          stroke="#f59e42"
+          fill="#fbbf24"
+          fillOpacity={0.17}
           dot={false}
         />
       </AreaChart>
     </ResponsiveContainer>
   </CardContent>
 </Card>
+
 
       </div>
     </div>
